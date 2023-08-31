@@ -56,7 +56,7 @@ class S3Operations(object):
         file_name = regex.sub('', file_name)
         return file_name
 
-    def key_generator(self, file_name, parent_doctype, parent_name):
+    def key_generator(self, file_name, parent_doctype, parent_name, file_path):
         """
         Generate keys for s3 objects uploaded with file name attached.
         """
@@ -80,21 +80,11 @@ class S3Operations(object):
                 string.ascii_uppercase + string.digits) for _ in range(8)
         )
 
-        today = datetime.datetime.now()
-        year = today.strftime("%Y")
-        month = today.strftime("%m")
-        day = today.strftime("%d")
 
         doc_path = None
 
         if not doc_path:
-            if self.folder_name:
-                final_key = self.folder_name + "/" + year + "/" + month + \
-                    "/" + day + "/" + parent_doctype + "/" + key + "_" + \
-                    file_name
-            else:
-                final_key = year + "/" + month + "/" + day + "/" + \
-                    parent_doctype + "/" + key + "_" + file_name
+            final_key = "/".join(file_path.split("/")[1:-1]) + "/" + file_name
             return final_key
         else:
             final_key = doc_path + '/' + key + "_" + file_name
@@ -108,7 +98,7 @@ class S3Operations(object):
         Strips the file extension to set the content_type in metadata.
         """
         mime_type = magic.from_file(file_path, mime=True)
-        key = self.key_generator(file_name, parent_doctype, parent_name)
+        key = self.key_generator(file_name, parent_doctype, parent_name, file_path)
         content_type = mime_type
         try:
             if is_private:
@@ -127,7 +117,7 @@ class S3Operations(object):
                     file_path, self.BUCKET, key,
                     ExtraArgs={
                         "ContentType": content_type,
-                        "ACL": 'public-read',
+                        # "ACL": 'public-read',
                         "Metadata": {
                             "ContentType": content_type,
 
@@ -202,6 +192,9 @@ def file_upload_to_s3(doc, method):
     """
     check and upload files to s3. the path check and
     """
+    if doc.is_folder:
+        return
+    
     s3_upload = S3Operations()
     path = doc.file_url
     site_path = frappe.utils.get_site_path()
@@ -229,9 +222,9 @@ def file_upload_to_s3(doc, method):
                 key
             )
         os.remove(file_path)
-        frappe.db.sql("""UPDATE `tabFile` SET file_url=%s, folder=%s,
+        frappe.db.sql("""UPDATE `tabFile` SET file_url=%s,
             old_parent=%s, content_hash=%s WHERE name=%s""", (
-            file_url, 'Home/Attachments', 'Home/Attachments', key, doc.name))
+            file_url, 'Home/Attachments', key, doc.name))
         
         doc.file_url = file_url
         
