@@ -72,9 +72,24 @@ class S3Operations(object):
                     return k.rstrip('/').lstrip('/')
             except:
                 pass
-
+        
         file_name = file_name.replace(' ', '_')
-        file_name = self.strip_special_chars(file_name)
+        extension = file_name.split(".")[-1]
+        # file_name = self.strip_special_chars(file_name)
+        if parent_doctype == 'Bill of Entry':
+            boe_data = frappe.get_doc("Bill of Entry", parent_name)
+            j = frappe.cache().get_value("child_doc")
+            for attach in boe_data.attachments:
+                if parent_doctype == 'Bill of Entry' and attach.attachment_type == j['attachment_type']:
+                    file_name = j['attachment_type']+ "_" + str(boe_data.p_0_beno) + '_' + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day) +"."+ extension
+        
+        if parent_doctype == 'Icegate Intimation':
+            file_name = parent_name +"."+ extension
+        else:
+            file_name = self.strip_special_chars(file_name)
+            
+        frappe.cache().delete_value('child_doc')
+            
         key = ''.join(
             random.choice(
                 string.ascii_uppercase + string.digits) for _ in range(8)
@@ -86,18 +101,21 @@ class S3Operations(object):
         day = today.strftime("%d")
 
         doc_path = None
-
+        new_folder = "Smartage"
         if not doc_path:
-            if self.folder_name:
+            if parent_doctype == 'Bill of Entry' :
+                final_key = self.folder_name + "/" + new_folder + "/" + parent_doctype + "/" + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day)+ \
+                    "_" + str(boe_data.p_0_beno) + "/" + file_name
+            elif self.folder_name:
                 final_key = self.folder_name + "/" + year + "/" + month + \
-                    "/" + day + "/" + parent_doctype + "/" + key + "_" + \
+                    "/" + day + "/" + parent_doctype + "/" + \
                     file_name
             else:
                 final_key = year + "/" + month + "/" + day + "/" + \
-                    parent_doctype + "/" + key + "_" + file_name
+                    parent_doctype + "/" + file_name
             return final_key
         else:
-            final_key = doc_path + '/' + key + "_" + file_name
+            final_key = doc_path + '/' + file_name
             return final_key
 
     def upload_files_to_s3_with_key(
