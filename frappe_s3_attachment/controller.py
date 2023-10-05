@@ -75,14 +75,18 @@ class S3Operations(object):
         
         file_name = file_name.replace(' ', '_')
         extension = file_name.split(".")[-1]
-        # file_name = self.strip_special_chars(file_name)
+        # file_name = self.strip_special_chars(file_name) // This commented code may require in future
         if parent_doctype == 'Bill of Entry':
             boe_data = frappe.get_doc("Bill of Entry", parent_name)
             j = frappe.cache().get_value("child_doc")
             for attach in boe_data.attachments:
                 if parent_doctype == 'Bill of Entry' and attach.attachment_type == j['attachment_type']:
                     file_name = j['attachment_type']+ "_" + str(boe_data.p_0_beno) + '_' + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day) +"."+ extension
-        
+
+        if parent_doctype == 'Communication':
+            communication_details = frappe.get_doc("Communication", parent_name)
+            if communication_details.reference_doctype == 'Icegate Intimation':
+                file_name = communication_details.reference_name + "." + extension
         if parent_doctype == 'Icegate Intimation':
             file_name = parent_name +"."+ extension
         else:
@@ -106,6 +110,10 @@ class S3Operations(object):
             if parent_doctype == 'Bill of Entry' :
                 final_key = self.folder_name + "/" + new_folder + "/" + parent_doctype + "/" + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day)+ \
                     "_" + str(boe_data.p_0_beno) + "/" + file_name
+            elif parent_doctype == 'Communication':
+                final_key = self.folder_name + "/" + year + "/" + month + \
+                    "/" + day + "/" + communication_details.reference_doctype + "/" + \
+                    file_name
             elif self.folder_name:
                 final_key = self.folder_name + "/" + year + "/" + month + \
                     "/" + day + "/" + parent_doctype + "/" + \
