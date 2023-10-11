@@ -80,8 +80,8 @@ class S3Operations(object):
             boe_data = frappe.get_doc("Bill of Entry", parent_name)
             j = frappe.cache().get_value("child_doc")
             for attach in boe_data.attachments:
-                if parent_doctype == 'Bill of Entry' and attach.attachment_type == j['attachment_type']:
-                    file_name = j['attachment_type']+ "_" + str(boe_data.p_0_beno) + '_' + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day) +"."+ extension
+                if parent_doctype == 'Bill of Entry' and attach.attachment_type == j:
+                    file_name = j+ "_" + str(boe_data.p_0_beno) + '_' + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day) +"."+ extension
 
         if parent_doctype == 'Communication':
             communication_details = frappe.get_doc("Communication", parent_name)
