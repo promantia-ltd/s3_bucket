@@ -80,9 +80,22 @@ class S3Operations(object):
             boe_data = frappe.get_doc("Bill of Entry", parent_name)
             j = frappe.cache().get_value("child_doc")
             for attach in boe_data.attachments:
-                if parent_doctype == 'Bill of Entry' and attach.attachment_type == j:
-                    file_name = j+ "_" + str(boe_data.p_0_beno) + '_' + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day) +"."+ extension
+                if parent_doctype == 'Bill of Entry' and attach.attachment_type == j['attachment_type']:
+                    file_name = j['attachment_type']+ "_" + j['doc_refn_no'] + "-BE" + str(boe_data.p_0_beno) + '_' + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day) +"."+ extension
 
+        if parent_doctype == 'Performance Record':
+            performance_data = frappe.get_doc("Performance Record", parent_name)
+            j = frappe.cache().get_value("child_doc")
+            if j['doctype'] == "Attachments Details":
+                for attach in performance_data.attachments:
+                    if parent_doctype == 'Performance Record' and attach.attachment_type == j['attachment_type']:
+                        file_name = j['attachment_type'] + "_" + j['doc_refn_no'] + "-BE" + str(performance_data.p_0_beno) + '_' + str(performance_data.p_0_bedate.year) + str(performance_data.p_0_bedate.month) + str(performance_data.p_0_bedate.day) +"."+ extension
+            elif j['doctype'] == "E-Sanchit Attachments":
+                for attach in performance_data.e_sanchit_attachments:
+                    if parent_doctype == 'Performance Record' and attach.invoice_sr_no == j['invoice_sr_no']:
+                        file_name = "IRN" + j['p_4l_irn'] + "_" + j['p_4l_type'] + "-BE" + str(performance_data.p_0_beno) + '_' + str(performance_data.p_0_bedate.year) + str(performance_data.p_0_bedate.month) + str(performance_data.p_0_bedate.day) +"."+ extension
+                
+        
         if parent_doctype == 'Communication':
             communication_details = frappe.get_doc("Communication", parent_name)
             if communication_details.reference_doctype == 'Icegate Intimation':
@@ -114,6 +127,13 @@ class S3Operations(object):
                 final_key = self.folder_name + "/" + year + "/" + month + \
                     "/" + day + "/" + communication_details.reference_doctype + "/" + \
                     file_name
+            elif parent_doctype == 'Performance Record':
+                if j['doctype'] == "Attachments Details":
+                    final_key = self.folder_name + "/" + new_folder + "/" + "Bill of Entry" + "/" + str(performance_data.p_0_bedate.year) + str(performance_data.p_0_bedate.month) + str(performance_data.p_0_bedate.day)+ \
+                        "_" + str(performance_data.p_0_beno) + "/" + "PR Attachments" + "/" + file_name
+                elif j['doctype'] == "E-Sanchit Attachments":
+                    final_key = self.folder_name + "/" + new_folder + "/" + "Bill of Entry" + "/" + str(performance_data.p_0_bedate.year) + str(performance_data.p_0_bedate.month) + str(performance_data.p_0_bedate.day)+ \
+                        "_" + str(performance_data.p_0_beno) + "/" + "PR E-sanchit Attachments" + "/" + file_name
             elif self.folder_name:
                 final_key = self.folder_name + "/" + year + "/" + month + \
                     "/" + day + "/" + parent_doctype + "/" + \
