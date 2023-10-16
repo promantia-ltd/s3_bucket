@@ -105,8 +105,6 @@ class S3Operations(object):
         else:
             file_name = self.strip_special_chars(file_name)
             
-        frappe.cache().delete_value('child_doc')
-            
         key = ''.join(
             random.choice(
                 string.ascii_uppercase + string.digits) for _ in range(8)
