@@ -80,7 +80,7 @@ class S3Operations(object):
             boe_data = frappe.get_doc("Bill of Entry", parent_name)
             row_details = frappe.cache().get_value("child_doc")
             for attach in boe_data.attachments:
-                if parent_doctype == 'Bill of Entry' and attach.attachment_type == row_details['attachment_type']:
+                if parent_doctype == 'Bill of Entry' and attach.doc_refn_no == row_details['doc_refn_no']:
                     file_name = row_details['attachment_type']+ "_" + row_details['doc_refn_no'] + "-BE" + str(boe_data.p_0_beno) + '_' + str(boe_data.p_0_bedate.year) + str(boe_data.p_0_bedate.month) + str(boe_data.p_0_bedate.day) +"."+ extension
 
         if parent_doctype == 'Performance Record':
@@ -88,7 +88,7 @@ class S3Operations(object):
             row_details = frappe.cache().get_value("child_doc")
             if row_details['doctype'] == "Attachments Details":
                 for attach in performance_data.attachments:
-                    if parent_doctype == 'Performance Record' and attach.attachment_type == row_details['attachment_type']:
+                    if parent_doctype == 'Performance Record' and attach.doc_refn_no == row_details['doc_refn_no']:
                         file_name = row_details['attachment_type'] + "_" + row_details['doc_refn_no'] + "-BE" + str(performance_data.p_0_beno) + '_' + str(performance_data.p_0_bedate.year) + str(performance_data.p_0_bedate.month) + str(performance_data.p_0_bedate.day) +"."+ extension
             elif row_details['doctype'] == "E-Sanchit Attachments":
                 for attach in performance_data.e_sanchit_attachments:
