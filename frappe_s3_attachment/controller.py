@@ -328,3 +328,15 @@ def ping():
     Test function to check if api function work.
     """
     return "pong"
+
+
+def get_file(key=None, file_name=None):
+    """
+    Function to stream file from s3.
+    """
+    if key:
+        s3_upload = S3Operations()
+        signed_url = s3_upload.get_url(key, file_name)
+        return signed_url
+    return
+    
