@@ -22,7 +22,7 @@ def validate_file_url(self):
 	if not self.file_url.startswith(("/files/", "/private/files/","/api/method/")):
 		# Probably an invalid URL since it doesn't start with http either
 		frappe.throw(
-			_("URL must start with http:// or https://"),
+			_("URL must start with http:// or https://","/api/method/"),
 			title=_("Invalid URL"),
 		)
 
