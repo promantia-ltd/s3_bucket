@@ -195,6 +195,8 @@ def file_upload_to_s3(doc, method):
     """
     if doc.is_folder:
         return
+    if doc.attached_to_doctype == "Prepared Report":
+        return
     
     s3_upload = S3Operations()
     path = doc.file_url
