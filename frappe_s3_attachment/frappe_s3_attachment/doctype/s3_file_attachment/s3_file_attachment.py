@@ -3,6 +3,9 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+import gzip
+from typing import Any
+gzip_decompress
 import frappe
 from frappe.model.document import Document
 from frappe import _
@@ -35,7 +38,6 @@ def  get_prepared_data(self, with_file_name=False):
 		response=requests.get(s3_url)
 		attached_file.file_url=s3_url
 		if response.status_code==200:
-			gzip= gzip_decompress(response.content)
-			return gzip
+			return gzip.decompress(response.content)
 		else :
 			return
