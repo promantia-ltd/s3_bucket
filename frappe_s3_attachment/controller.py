@@ -10,8 +10,9 @@ import boto3
 
 from botocore.client import Config
 from botocore.exceptions import ClientError
-
 import frappe
+from configurable_attachment_folder.overrides.file import path_finder
+
 
 
 import magic
@@ -262,57 +263,72 @@ def generate_file(key=None, file_name=None):
     else:
         frappe.local.response['body'] = "Key not found."
     return
-
 def upload_existing_files_s3(name, file_name):
-    
-    # Get single doctypes and extract names into a list
-    single_doctypes = [doc['name'] for doc in frappe.get_list(
-    'DocType',
-    filters={'issingle': 1},
-    fields=['name']
-)]
-
     """
     Function to upload all existing files.
     """
+    # Get single doctypes and extract names into a list
+    single_doctypes = [doc['name'] for doc in frappe.get_list(
+        'DocType',
+        filters={'issingle': 1},
+        fields=['name']
+    )]
+
     file_doc_name = frappe.db.get_value('File', {'name': name})
     if file_doc_name:
         doc = frappe.get_doc('File', name)
-        if doc.attached_to_doctype in single_doctypes :
+
+        # Skip files attached to single doctypes
+        if doc.attached_to_doctype in single_doctypes:
             return
-        
+
+        # Initialize the S3 upload operation
         s3_upload = S3Operations()
         path = doc.file_url
         site_path = frappe.utils.get_site_path()
         parent_doctype = doc.attached_to_doctype
         parent_name = doc.attached_to_name
 
-        if not doc.is_private:
-            file_path = site_path + '/public' + path
-        else:
-            file_path = site_path + path
-            
+        # Use path_finder to get the folder path based on the document
+        folder_path = path_finder(parent_doctype, parent_name)
+
+        # Check if path_finder provided a valid folder, otherwise use fallback
+        if not folder_path:
+            if not doc.is_private:
+                folder_path = site_path + '/public' + path  # Fallback for public files
+            else:
+                folder_path = site_path + path  # Fallback for private files
+
+        # Construct the full file path to be uploaded
+        file_path = os.path.join(folder_path, file_name)
+
+        # Upload the file to S3 using the generated file path
         key = s3_upload.upload_files_to_s3_with_key(
             file_path, doc.file_name,
             doc.is_private, parent_doctype,
             parent_name
         )
-        
-        if doc.is_private:
-            method = "frappe_s3_attachment.controller.generate_file"
-            file_url = """/api/method/{0}?key={1}""".format(method, key)
-        else:
-           method = "frappe_s3_attachment.controller.generate_file"
-           file_url = """/api/method/{0}?key={1}""".format(method, key)
-           
+
+        # Generate the file URL for accessing the file in S3
+        method = "frappe_s3_attachment.controller.generate_file"
+        file_url = f"/api/method/{method}?key={key}"
+
+        # Remove the local file after it has been uploaded
         if os.path.exists(file_path):
             os.remove(file_path)
-        doc = frappe.db.sql("""UPDATE `tabFile` SET file_url=%s, folder=%s,
-            old_parent=%s, content_hash=%s WHERE name=%s""", (
-            file_url, 'Home/Attachments', 'Home/Attachments', key, doc.name))
+
+        # Update the file record in the database with the new file URL and key
+        frappe.db.sql("""
+            UPDATE `tabFile` 
+            SET file_url=%s, folder=%s, old_parent=%s, content_hash=%s 
+            WHERE name=%s
+        """, (file_url, 'Home/Attachments', 'Home/Attachments', key, doc.name))
+
         frappe.db.commit()
+
     else:
-        pass
+        pass  # No action if the file document isn't found
+
 
 
 def s3_file_regex_match(file_url):
