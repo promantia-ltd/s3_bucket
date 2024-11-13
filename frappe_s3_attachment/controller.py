@@ -12,6 +12,7 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 import frappe
 from configurable_attachment_folder.overrides.file import path_finder
+from frappe.utils import cint, get_files_path, get_url
 
 
 
@@ -290,7 +291,7 @@ def upload_existing_files_s3(name, file_name):
         parent_name = doc.attached_to_name
 
         # Use path_finder to get the folder path based on the document
-        folder_path = path_finder(parent_doctype, parent_name)
+        folder_path = update_existing_file_url(doc)
 
         # Check if path_finder provided a valid folder, otherwise use fallback
         if not folder_path:
@@ -330,6 +331,19 @@ def upload_existing_files_s3(name, file_name):
         pass  # No action if the file document isn't found
 
 
+def update_existing_file_url(self):
+    file_name = self.file_url.rsplit("/", 1)[-1] if self.file_url else ""
+    
+    url_starts_with = "/private/files/" if cint(self.is_private) else "/files/"
+    
+    dynamic_path = path_finder(self.attached_to_doctype, self.attached_to_name)
+    updated_file_url = f"{url_starts_with}{dynamic_path}{file_name}"
+    
+    # Only update file_url if it has actually changed
+    if updated_file_url != self.file_url:
+        self.file_url = updated_file_url
+    
+    return self.file_url
 
 def s3_file_regex_match(file_url):
     """
