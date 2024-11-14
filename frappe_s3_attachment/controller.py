@@ -5,6 +5,7 @@ import os
 import random
 import re
 import string
+import shutil
 
 import boto3
 
@@ -12,7 +13,6 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 
 import frappe
-
 
 import magic
 URL_PREFIXES = ("http://", "https://")
@@ -263,6 +263,23 @@ def generate_file(key=None, file_name=None):
         frappe.local.response['body'] = "Key not found."
     return
 
+def move_file(source_path, destination_path):
+    """
+    Move a file from the source path to the destination path.
+
+    This function creates the necessary directories in the destination path if they do not exist,
+    and then moves the file from the source path to the destination path using the shutil.move function.
+
+    Parameters:
+    source_path (str): The current location of the file.
+    destination_path (str): The desired location of the file.
+
+    Returns:
+    None
+    """
+    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+    shutil.move(source_path, destination_path)
+
 def upload_existing_files_s3(name, file_name):
     
     # Get single doctypes and extract names into a list
@@ -287,10 +304,20 @@ def upload_existing_files_s3(name, file_name):
         parent_doctype = doc.attached_to_doctype
         parent_name = doc.attached_to_name
 
-        if not doc.is_private:
-            file_path = site_path + '/public' + path
-        else:
-            file_path = site_path + path
+        source_path = file_path = site_path + '/public' + path
+        if doc.is_private:
+            source_path = file_path = site_path + path
+
+        if "configurable_attachment_folder" in frappe.get_installed_apps():
+            from configurable_attachment_folder.overrides.file import path_finder
+
+            if folder_path := path_finder(parent_doctype, parent_name):
+                file_path = site_path + "/public/files/" + folder_path + doc.file_name
+                if doc.is_private:
+                    file_path = site_path + "/private/files/" + folder_path + doc.file_name
+
+                if source_path != file_path:
+                    move_file(source_path, file_path)
             
         key = s3_upload.upload_files_to_s3_with_key(
             file_path, doc.file_name,
