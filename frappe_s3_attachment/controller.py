@@ -243,7 +243,7 @@ def file_upload_to_s3(doc, method):
                 base_url = frappe.utils.get_url()
                 updated_url = urljoin(base_url, file_url)
             
-            doc = frappe.db.sql("""
+            frappe.db.sql("""
                             UPDATE `tabFile` SET 
                                 file_url=%s,
                                 custom_updated_url=%s,
