@@ -13,7 +13,7 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 
 import frappe
-
+from urllib.parse import urljoin
 import magic
 URL_PREFIXES = ("http://", "https://")
 
@@ -237,9 +237,26 @@ def file_upload_to_s3(doc, method):
                 file_url = """/api/method/{0}?key={1}&file_name={2}""".format(method, key, doc.file_name)
                 
             os.remove(file_path)
-            frappe.db.sql("""UPDATE `tabFile` SET file_url=%s,
-                old_parent=%s, content_hash=%s WHERE name=%s""", (
-                file_url, 'Home/Attachments', key, doc.name))
+            updated_url = file_url.replace('#', '%23')
+
+            if not file_url.startswith("http"):
+                base_url = frappe.utils.get_url()
+                updated_url = urljoin(base_url, file_url)
+            
+            frappe.db.sql("""
+                            UPDATE `tabFile` SET 
+                                file_url=%s,
+                                custom_updated_url=%s,
+                                old_parent=%s, 
+                                content_hash=%s 
+                            WHERE name=%s
+                        """, (
+                            file_url,              
+                            updated_url,           
+                            'Home/Attachments',    
+                            key,                   
+                            doc.name               
+                        ))
             
             doc.file_url = file_url
             
@@ -334,9 +351,26 @@ def upload_existing_files_s3(name, file_name):
            
         if os.path.exists(file_path):
             os.remove(file_path)
-        doc = frappe.db.sql("""UPDATE `tabFile` SET file_url=%s, folder=%s,
-            old_parent=%s, content_hash=%s WHERE name=%s""", (
-            file_url, 'Home/Attachments', 'Home/Attachments', key, doc.name))
+        updated_url = file_url.replace('#', '%23')
+
+        if not file_url.startswith("http"):
+            base_url = frappe.utils.get_url()
+            updated_url = urljoin(base_url, file_url)
+        
+        doc = frappe.db.sql("""
+                        UPDATE `tabFile` SET 
+                            file_url=%s,
+                            custom_updated_url=%s,
+                            old_parent=%s, 
+                            content_hash=%s 
+                        WHERE name=%s
+                    """, (
+                        file_url,              
+                        updated_url,           
+                        'Home/Attachments',    
+                        key,                   
+                        doc.name               
+                    ))
         frappe.db.commit()
     else:
         pass
