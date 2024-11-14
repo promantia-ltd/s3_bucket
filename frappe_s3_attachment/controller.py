@@ -355,30 +355,53 @@ def s3_file_regex_match(file_url):
 @frappe.whitelist()
 def migrate_existing_files():
     """
-    Function to migrate the existing files to s3.
+    Migrate the existing files from the public/private folder to S3.
+
+    This function retrieves all files from the 'File' DocType, filters out files that are already
+    stored in S3, and then uploads the remaining files to S3. The function also updates the file
+    URLs in the 'File' DocType to point to the S3 location.
+
+    Parameters:
+    None
+
+    Returns:
+    str: A message indicating the success or failure of the migration process.
     """
     # get_all_files_from_public_folder_and_upload_to_s3
+    msg = "Upload Successfull"
+
     files_list = frappe.get_all(
         'File',
         fields=['name', 'file_url', 'file_name']
     )
     total_files = len(files_list)
     if total_files == 0:
-        return True
+        return msg
 
+    successfully_uploaded = 0
     for idx, file in enumerate(files_list):
         if file['file_url']:
             if not s3_file_regex_match(file['file_url']):
-                upload_existing_files_s3(file['name'], file['file_name'])
+                try:
+                    upload_existing_files_s3(file['name'], file['file_name'])
+                    successfully_uploaded += 1
+                except Exception as e:
+                    frappe.log_error(f"{file['file_name']} Upload Failed", frappe.get_traceback())
 
         # Update progress
         frappe.publish_realtime(
             "progress", 
             dict(progress=(idx + 1) * 100 / total_files), 
-            
+
         )
-        
-    return True
+
+    frappe.clear_messages()
+    return (
+                "Partially Uploaded. "
+                f"<br><br>Check <a href='/app/error-log' target='_blank'>Error Log</a> for more information."
+                if successfully_uploaded != total_files
+                else msg
+            )
 
 def delete_from_cloud(doc, method):
     """Delete file from s3"""

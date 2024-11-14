@@ -18,8 +18,8 @@ frappe.ui.form.on('S3 File Attachment', {
                 
                 if (data.progress >= 100) {
                     setTimeout(() => {
-                        location.reload(true); 
-                    }, 2000);
+                        frm.reload_doc(); 
+                    }, 1000);
                 }
             }
         });
@@ -29,11 +29,7 @@ frappe.ui.form.on('S3 File Attachment', {
         frappe.call({
             method: "frappe_s3_attachment.controller.migrate_existing_files",
             callback: function (data) {
-                if (data.message) {
-                    frappe.msgprint('Upload Successful');
-                } else {
-                    frappe.msgprint('Retry');
-                }
+                frappe.msgprint(data.message)
             }
         });
     },
