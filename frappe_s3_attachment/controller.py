@@ -14,7 +14,6 @@ from botocore.exceptions import ClientError
 
 import frappe
 
-from configurable_attachment_folder.overrides.file import path_finder
 import magic
 URL_PREFIXES = ("http://", "https://")
 
@@ -268,13 +267,12 @@ def move_file(source_path, destination_path):
     """
     Move a file from the source path to the destination path.
 
-    This function takes two parameters:
-    - source_path (str): The current location of the file. This is the path where the file currently resides.
-    - destination_path (str): The desired location of the file. This is the path where the file will be moved to.
+    This function creates the necessary directories in the destination path if they do not exist,
+    and then moves the file from the source path to the destination path using the shutil.move function.
 
-    The function first constructs the full path of the destination directory using
-    `frappe.get_site_path()`. It then creates the destination directory if it does not exist.
-    Finally, it moves the file from the source path to the destination path using `shutil.move()`.
+    Parameters:
+    source_path (str): The current location of the file.
+    destination_path (str): The desired location of the file.
 
     Returns:
     None
@@ -310,13 +308,16 @@ def upload_existing_files_s3(name, file_name):
         if doc.is_private:
             source_path = file_path = site_path + path
 
-        if folder_path := path_finder(parent_doctype, parent_name):
-            file_path = site_path + "/public/files/" + folder_path + doc.file_name
-            if doc.is_private:
-                file_path = site_path + "/private/files/" + folder_path + doc.file_name
+        if "configurable_attachment_folder" in frappe.get_installed_apps():
+            from configurable_attachment_folder.overrides.file import path_finder
 
-            if source_path != file_path:
-                move_file(source_path, file_path)
+            if folder_path := path_finder(parent_doctype, parent_name):
+                file_path = site_path + "/public/files/" + folder_path + doc.file_name
+                if doc.is_private:
+                    file_path = site_path + "/private/files/" + folder_path + doc.file_name
+
+                if source_path != file_path:
+                    move_file(source_path, file_path)
             
         key = s3_upload.upload_files_to_s3_with_key(
             file_path, doc.file_name,
