@@ -235,11 +235,14 @@ def file_upload_to_s3(doc, method):
                 file_url = """/api/method/{0}?key={1}&file_name={2}""".format(method, key, doc.file_name)
                 
             os.remove(file_path)
-            updated_url = file_url.replace('#', '%23')
-
+            
+            bucket_name = s3_upload.BUCKET
+            region_name = s3_upload.S3_CLIENT.meta.region_name
+            updated_url = file_url
+            
             if not file_url.startswith("http"):
-                base_url = frappe.utils.get_url()
-                updated_url = urljoin(base_url, file_url)
+                updated_url = f"https://{bucket_name}.s3.{region_name}.amazonaws.com/{key}"
+        
             
             frappe.db.sql("""
                             UPDATE `tabFile` SET 
@@ -295,7 +298,6 @@ def move_file(source_path, destination_path):
     shutil.move(source_path, destination_path)
 
 def upload_existing_files_s3(name, file_name):
-    
     # Get single doctypes and extract names into a list
     single_doctypes = [doc['name'] for doc in frappe.get_list(
     'DocType',
@@ -317,6 +319,7 @@ def upload_existing_files_s3(name, file_name):
         site_path = frappe.utils.get_site_path()
         parent_doctype = doc.attached_to_doctype
         parent_name = doc.attached_to_name
+        
 
         source_path = file_path = site_path + '/public' + path
         if doc.is_private:
@@ -348,11 +351,10 @@ def upload_existing_files_s3(name, file_name):
            
         if os.path.exists(file_path):
             os.remove(file_path)
-        updated_url = file_url.replace('#', '%23')
-
+        bucket_name = s3_upload.BUCKET
+        region_name = s3_upload.S3_CLIENT.meta.region_name
         if not file_url.startswith("http"):
-            base_url = frappe.utils.get_url()
-            updated_url = urljoin(base_url, file_url)
+            updated_url = f"https://{bucket_name}.s3.{region_name}.amazonaws.com/{key}"
         
         doc = frappe.db.sql("""
                         UPDATE `tabFile` SET 
