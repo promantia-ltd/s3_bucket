@@ -200,7 +200,7 @@ def file_upload_to_s3(doc, method):
     """
     if doc.is_folder:
         return
-    if doc.attached_to_doctype == "Prepared Report":
+    if doc.attached_to_doctype == "Prepared Report"  or doc.attached_to_doctype == "Repost Item Valuation" :
         return
     
     s3_upload = S3Operations()
