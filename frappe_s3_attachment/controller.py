@@ -97,17 +97,15 @@ class S3Operations(object):
         Uploads a new file to S3.
         Strips the file extension to set the content_type in metadata.
         """
-        if not file_path==None:
-            
-            if not file_path==None:
-                try:
-                    mime_type = magic.from_file(file_path, mime=True)
-                    key = self.key_generator(file_name, parent_doctype, parent_name, file_path)
-                    content_type = mime_type
-                    
-                except FileNotFoundError:
-                    frappe.log_error(f"File not found: {file_name}",  )
-                    return None 
+        if file_path:
+            try:
+                mime_type = magic.from_file(file_path, mime=True)
+                key = self.key_generator(file_name, parent_doctype, parent_name, file_path)
+                content_type = mime_type
+                
+            except FileNotFoundError:
+                frappe.log_error(f"File not found: {file_name}",  )
+                return None 
             try:
                 if is_private:
                     self.S3_CLIENT.upload_file(
@@ -202,7 +200,7 @@ def file_upload_to_s3(doc, method):
     """
     if doc.is_folder:
         return
-    if doc.attached_to_doctype == "Prepared Report":
+    if doc.attached_to_doctype == "Prepared Report"  or doc.attached_to_doctype == "Repost Item Valuation" :
         return
     
     s3_upload = S3Operations()
@@ -281,7 +279,6 @@ def generate_file(key=None, file_name=None):
         frappe.local.response["location"] = signed_url
     else:
         frappe.local.response['body'] = "Key not found."
-    return
 
 def move_file(source_path, destination_path):
     """
@@ -416,13 +413,12 @@ def migrate_existing_files():
 
     successfully_uploaded = 0
     for idx, file in enumerate(files_list):
-        if file['file_url']:
-            if not s3_file_regex_match(file['file_url']):
-                try:
-                    upload_existing_files_s3(file['name'], file['file_name'])
-                    successfully_uploaded += 1
-                except Exception as e:
-                    frappe.log_error(f"{file['file_name']} Upload Failed", frappe.get_traceback())
+        if file['file_url'] and not s3_file_regex_match(file['file_url']):
+            try:
+                upload_existing_files_s3(file['name'], file['file_name'])
+                successfully_uploaded += 1
+            except Exception as e:
+                frappe.log_error(f"{file['file_name']} Upload Failed", frappe.get_traceback())
 
         # Update progress
         frappe.publish_realtime(
@@ -455,11 +451,17 @@ def ping():
 
 def get_file(key=None, file_name=None):
     """
-    Function to stream file from s3.
+    Fetches a signed URL for a file from S3 if the key is provided.
+
+    Args:
+        key (str): The S3 key of the file.
+        file_name (str): Optional name of the file (used in URL generation).
+
+    Returns:
+        str: A signed URL for the file, or None if no key is provided.
     """
-    if key:
-        s3_upload = S3Operations()
-        signed_url = s3_upload.get_url(key, file_name)
-        return signed_url
-    return
-    
+    if not key:
+        return None
+
+    s3_upload = S3Operations()
+    return s3_upload.get_url(key, file_name)
