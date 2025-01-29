@@ -200,7 +200,7 @@ def file_upload_to_s3(doc, method):
     """
     if doc.is_folder:
         return
-    if doc.attached_to_doctype == "Prepared Report"  or doc.attached_to_doctype == "Repost Item Valuation" :
+    if doc.attached_to_doctype  in [ "Prepared Report",   "Repost Item Valuation", "Chart of Accounts Importer", "Bank Statement Import" ]:
         return
     
     s3_upload = S3Operations()
@@ -208,7 +208,7 @@ def file_upload_to_s3(doc, method):
     site_path = frappe.utils.get_site_path()
     parent_doctype = doc.attached_to_doctype or 'File'
     parent_name = doc.attached_to_name
-    ignore_s3_upload_for_doctype = frappe.local.conf.get('ignore_s3_upload_for_doctype') or ['Data Import']
+    ignore_s3_upload_for_doctype = frappe.local.conf.get('ignore_s3_upload_for_doctype') or ['Data Import'] 
     if parent_doctype not in ignore_s3_upload_for_doctype:
         if not doc.is_private:
             if  path.startswith("http"):
