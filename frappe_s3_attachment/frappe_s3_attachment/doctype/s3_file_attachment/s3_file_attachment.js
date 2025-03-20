@@ -24,7 +24,8 @@ frappe.ui.form.on('S3 File Attachment', {
             }
         });
     },
-    
+
+    // migrate existing files to s3
     migrate_existing_files: function(frm) {
         frappe.call({
             method: "frappe_s3_attachment.controller.migrate_existing_files",
