@@ -14,7 +14,6 @@ from botocore.exceptions import ClientError
 
 import frappe
 from urllib.parse import urljoin
-import magic
 URL_PREFIXES = ("http://", "https://")
 
 class S3Operations(object):
@@ -99,6 +98,7 @@ class S3Operations(object):
         """
         if file_path:
             try:
+                import magic
                 mime_type = magic.from_file(file_path, mime=True)
                 key = self.key_generator(file_name, parent_doctype, parent_name, file_path)
                 content_type = mime_type
