@@ -483,7 +483,14 @@ def migrate_existing_files():
 def delete_from_cloud(doc, method):
     """Delete file from s3"""
 
-    s3 = S3Operations()
+    if is_s3_upload_disabled() or not doc.content_hash:
+        return
+
+    try:
+        s3 = S3Operations()
+    except Exception:
+        return
+
     s3.delete_from_s3(doc.content_hash)
 
 
