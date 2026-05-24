@@ -21,8 +21,6 @@ URL_PREFIXES = ("http://", "https://")
 
 def is_s3_upload_disabled():
     try:
-        if not frappe.db.has_column("S3 File Attachment", "disable_s3_upload"):
-            return 0
         return cint(frappe.db.get_single_value("S3 File Attachment", "disable_s3_upload"))
     except Exception:
         return 0
