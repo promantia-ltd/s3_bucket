@@ -235,7 +235,7 @@ def file_upload_to_s3(doc, method):
 
     if doc.is_folder:
         return
-    if doc.attached_to_doctype  in [ "Prepared Report",   "Repost Item Valuation", "Chart of Accounts Importer", "Bank Statement Import" ]:
+    if doc.attached_to_doctype  in [ "Prepared Report",   "Repost Item Valuation", "Chart of Accounts Importer", "Bank Statement Import", "Canara Bank Connector" ]:
         return
     
     s3_upload = S3Operations()
