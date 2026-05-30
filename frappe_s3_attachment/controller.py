@@ -14,7 +14,6 @@ from botocore.exceptions import ClientError
 
 import frappe
 from urllib.parse import urljoin
-import magic
 from frappe.utils import cint
 URL_PREFIXES = ("http://", "https://")
 
