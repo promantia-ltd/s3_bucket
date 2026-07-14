@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import datetime
+import mimetypes
 import os
 import random
 import re
@@ -128,15 +129,16 @@ class S3Operations(object):
         Strips the file extension to set the content_type in metadata.
         """
         if file_path:
+            key = self.key_generator(file_name, parent_doctype, parent_name, file_path)
             try:
                 import magic
                 mime_type = magic.from_file(file_path, mime=True)
-                key = self.key_generator(file_name, parent_doctype, parent_name, file_path)
                 content_type = mime_type
-                
+            except ImportError:
+                content_type = mimetypes.guess_type(file_name)[0] or "application/octet-stream"
             except FileNotFoundError:
-                frappe.log_error(f"File not found: {file_name}",  )
-                return None 
+                frappe.log_error(f"File not found: {file_name}")
+                return None
             try:
                 if is_private:
                     self.S3_CLIENT.upload_file(
